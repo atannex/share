@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Atannex\Share\View\Components;
 
-use Atannex\Share\PendingShare;
 use Illuminate\Contracts\View\View;
 
 /**
@@ -23,7 +22,7 @@ final class Sheet extends ShareComponent
      */
     public function __construct(
         mixed $for = null,
-        ?PendingShare $share = null,
+        mixed $share = null,
         string|array|null $only = null,
         string|array|null $except = null,
         ?string $preset = null,
