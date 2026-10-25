@@ -79,6 +79,13 @@
                 </div>
             @endif
 
+            @if ($native && $data->files)
+                {{-- Shown by the script only where the device can share these files. --}}
+                <button type="button" hidden data-share-files {!! \Atannex\Share\Links\Link::attributeString($native->attributes() + ['class' => 'share-sheet__native']) !!}>
+                    {!! $native->icon !!}<span>{{ __('share::share.share_file') }}</span>
+                </button>
+            @endif
+
             @if ($native)
                 <button type="button" hidden {!! \Atannex\Share\Links\Link::attributeString($native->attributes() + ['class' => 'share-sheet__native']) !!}>
                     {!! $native->icon !!}<span>{{ __('share::share.native') }}</span>

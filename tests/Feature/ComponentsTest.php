@@ -48,6 +48,11 @@ final class ComponentsTest extends TestCase
         $this->assertStringContainsString('<svg', $this->between($html, 'share-sheet__qr-code', '</div>'));
         $this->assertStringContainsString('&lt;iframe src=&quot;x&quot;&gt;&lt;/iframe&gt;</textarea>', $html);
         $this->assertStringContainsString('value="http://localhost/stories/quoted?utm_source=copy&amp;utm_medium=copy&amp;utm_campaign=share"', $html);
+        $this->assertStringNotContainsString('data-share-files', $html, 'no files, no file button');
+
+        $withFile = Blade::render('<x-share::sheet :share="$share" />', ['share' => Share::for($this->article())->file('https://cdn.test/v.mp4', 'video/mp4', size: 1024)]);
+        $this->assertMatchesRegularExpression('/<button type="button" hidden data-share-files data-share-platform="native"/', $withFile);
+        $this->assertStringContainsString('&quot;files&quot;:[{&quot;url&quot;:&quot;https://cdn.test/v.mp4', $withFile);
     }
 
     #[Test]

@@ -15,6 +15,7 @@ return [
     'embed' => 'Embed on a website',
     'qr' => 'QR code',
     'qr_hint' => 'Scan with a phone camera to open it there.',
+    'share_file' => 'Share the file',
     'native' => 'More apps on this device',
     'preparing' => 'Preparing…',
     'ready' => 'Tap again to share',

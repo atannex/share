@@ -15,6 +15,7 @@ return [
     'embed' => 'Intégrer sur un site',
     'qr' => 'Code QR',
     'qr_hint' => 'Scannez-le avec l’appareil photo d’un téléphone pour l’y ouvrir.',
+    'share_file' => 'Partager le fichier',
     'native' => 'Autres applications de cet appareil',
     'preparing' => 'Préparation…',
     'ready' => 'Touchez encore pour partager',

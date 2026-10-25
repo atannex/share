@@ -194,6 +194,8 @@ Theme with variables:
 :root { --share-size: 2.75rem; --share-radius: .75rem; --share-focus: #c2410c; }
 ```
 
+Any element can open a sheet with `data-share-open="share-sheet"`, or `data-share-open="share-sheet#section-id"` to open it and scroll to a section. A native button with `data-share-files` shares the share's files (added with `->file()`), and the script only shows it where the device can share them. The sheet adds one automatically.
+
 The script fires a `share:shared` event for your own analytics:
 
 ```js

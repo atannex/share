@@ -12,7 +12,8 @@
      *   [data-share-popup="WxH"]   web platform: centred popup on desktop, new tab elsewhere
      *   [data-share-beacon]        counted by the page (the server can't see it)
      *   [data-share-action]        copy, embed, native, print
-     *   [data-share-open="id"]     opens <x-share::sheet id="id">
+     *   [data-share-files]         on a native button: shares the share's files (shown only where the device can)
+     *   [data-share-open="id"]     opens <x-share::sheet id="id">; "id#section" also scrolls to #section
      *   [data-share-close]         closes it
      *   [data-share-select]        selects its text on focus
      *
@@ -129,6 +130,10 @@
 
         const buttons = scope.matches && scope.matches('[data-share-action="native"]') ? [scope] : scope.querySelectorAll('[data-share-action="native"]');
         buttons.forEach((button) => {
+            if (button.hasAttribute('data-share-files')) {
+                const files = settings(button.closest('[data-share]')).files;
+                if (!files || !files.length || !canShareFiles(files)) return;
+            }
             button.hidden = false;
         });
     }
@@ -139,7 +144,7 @@
 
         // Files (a video for Instagram or TikTok…): fetch first, then share on a second tap,
         // because the browser only allows share() straight after a tap.
-        if (config.files && config.files.length && canShareFiles(config.files)) {
+        if (button.hasAttribute('data-share-files') && config.files && config.files.length && canShareFiles(config.files)) {
             const files = prepared.get(button);
 
             if (!files) {
@@ -227,12 +232,14 @@
 
     /* Sheet --------------------------------------------------------------- */
 
-    function openSheet(id, opener) {
+    function openSheet(target, opener) {
+        const [id, section] = String(target).split('#');
         const sheet = document.getElementById(id);
         if (!sheet || typeof sheet.showModal !== 'function' || sheet.open) return;
 
         sheet.showModal();
         document.documentElement.classList.add('share-locked');
+        if (section) document.getElementById(section)?.scrollIntoView({ block: 'start' });
         sheet.addEventListener('close', () => {
             document.documentElement.classList.remove('share-locked');
             opener && opener.focus && opener.focus();
