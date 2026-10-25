@@ -1,0 +1,520 @@
+/* atannex/share: default look. Theme with the --share-* properties. */
+:root {
+    --share-gap: 0.5rem;
+    --share-size: 2.5rem;
+    --share-radius: 999px;
+    --share-font: inherit;
+    --share-fg: #1f2937;
+    --share-muted: #6b7280;
+    --share-bg: #ffffff;
+    --share-surface: #f3f4f6;
+    --share-border: #d1d5db;
+    --share-focus: #2563eb;
+    --share-success: #16a34a;
+    --share-sheet-width: 34rem;
+    --share-shadow: 0 24px 64px -16px rgb(0 0 0 / 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']):not(.light) {
+        --share-fg: #f3f4f6;
+        --share-muted: #9ca3af;
+        --share-bg: #111827;
+        --share-surface: #1f2937;
+        --share-border: #374151;
+        --share-focus: #60a5fa;
+    }
+}
+
+:root[data-theme='dark'],
+:root.dark {
+    --share-fg: #f3f4f6;
+    --share-muted: #9ca3af;
+    --share-bg: #111827;
+    --share-surface: #1f2937;
+    --share-border: #374151;
+    --share-focus: #60a5fa;
+}
+
+/* Buttons ------------------------------------------------------------------- */
+
+.share {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--share-gap);
+    font-family: var(--share-font);
+}
+
+.share--vertical {
+    flex-direction: column;
+    flex-wrap: nowrap;
+}
+
+.share--sm {
+    --share-size: 2rem;
+}
+
+.share--lg {
+    --share-size: 3rem;
+}
+
+.share__heading {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--share-muted);
+    margin-inline-end: 0.25rem;
+}
+
+.share__button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: var(--share-size);
+    height: var(--share-size);
+    padding: 0;
+    border: 1px solid var(--share-border);
+    border-radius: var(--share-radius);
+    background: var(--share-bg);
+    color: var(--share-fg);
+    font: inherit;
+    font-size: calc(var(--share-size) * 0.36);
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        transform 0.15s ease;
+}
+
+.share__button .share-icon {
+    width: 1.15em;
+    height: 1.15em;
+    flex: none;
+}
+
+.share__button:hover,
+.share__button:focus-visible {
+    border-color: var(--share-brand, var(--share-fg));
+    background: var(--share-brand, var(--share-fg));
+    color: var(--share-brand-fg, var(--share-bg));
+}
+
+.share__button:active {
+    transform: scale(0.96);
+}
+
+.share__button:focus-visible,
+.share-sheet :focus-visible {
+    outline: 2px solid var(--share-focus);
+    outline-offset: 2px;
+}
+
+.share__button[disabled] {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.share__label {
+    display: none;
+}
+
+.share--labels .share__button {
+    padding-inline: calc(var(--share-size) * 0.4);
+}
+
+.share--labels .share__label {
+    display: inline;
+}
+
+/* Visually hidden, read by screen readers. */
+.share__status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* brand: filled in each platform's colour */
+.share--brand .share__button {
+    border-color: transparent;
+    background: var(--share-brand, var(--share-fg));
+    color: var(--share-brand-fg, #fff);
+}
+
+.share--brand .share__button:hover,
+.share--brand .share__button:focus-visible {
+    filter: brightness(1.1);
+}
+
+/* Black marks (X, Threads) keep an edge on dark pages. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']):not(.light) .share--brand .share__button,
+    :root:not([data-theme='light']):not(.light) .share-sheet__mark {
+        box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+    }
+}
+
+:root[data-theme='dark'] .share--brand .share__button,
+:root.dark .share--brand .share__button,
+:root[data-theme='dark'] .share-sheet__mark,
+:root.dark .share-sheet__mark {
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+
+/* minimal: text links */
+.share--minimal {
+    gap: 1rem;
+}
+
+.share--minimal .share__button {
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--share-muted);
+    font-size: 0.9rem;
+}
+
+.share--minimal .share__button:hover,
+.share--minimal .share__button:focus-visible {
+    background: none;
+    color: var(--share-brand, var(--share-fg));
+}
+
+/* Copy confirmation: the check replaces the icon for a moment */
+.share__done {
+    display: none;
+}
+
+.is-done > .share-icon,
+.is-done > svg.share-icon {
+    display: none;
+}
+
+.is-done > .share__done {
+    display: inline-flex;
+    color: var(--share-success);
+}
+
+.is-ready {
+    border-color: var(--share-success);
+}
+
+/* Phone-only platforms (app schemes) stay out of the way on desktops */
+@media (hover: hover) and (pointer: fine) {
+    [data-share-mobile] {
+        display: none !important;
+    }
+}
+
+/* Sheet --------------------------------------------------------------------- */
+
+.share-locked {
+    overflow: hidden;
+}
+
+.share-sheet {
+    width: min(var(--share-sheet-width), calc(100vw - 2rem));
+    max-height: min(88dvh, 52rem);
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--share-border);
+    border-radius: 1.25rem;
+    background: var(--share-bg);
+    color: var(--share-fg);
+    font-family: var(--share-font);
+    box-shadow: var(--share-shadow);
+    overflow: hidden;
+}
+
+.share-sheet::backdrop {
+    background: rgb(0 0 0 / 0.55);
+    backdrop-filter: blur(4px);
+}
+
+.share-sheet[open] {
+    animation: share-in 0.2s ease-out;
+}
+
+@keyframes share-in {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .share-sheet[open] {
+        animation: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .share-sheet {
+        width: 100vw;
+        max-width: 100vw;
+        margin: auto 0 0;
+        border-radius: 1.25rem 1.25rem 0 0;
+    }
+}
+
+.share-sheet__panel {
+    display: flex;
+    flex-direction: column;
+    max-height: inherit;
+}
+
+.share-sheet__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--share-border);
+}
+
+.share-sheet__title {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.share-sheet__close {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid var(--share-border);
+    border-radius: 999px;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+}
+
+.share-sheet__body {
+    display: grid;
+    gap: 1.25rem;
+    padding: 1.25rem;
+    overflow-y: auto;
+}
+
+.share-sheet__card {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    margin: 0;
+    padding: 0.75rem;
+    border: 1px solid var(--share-border);
+    border-radius: 0.9rem;
+    background: var(--share-surface);
+}
+
+.share-sheet__card img {
+    width: 6rem;
+    height: 4rem;
+    flex: none;
+    border-radius: 0.6rem;
+    object-fit: cover;
+}
+
+.share-sheet__card figcaption {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.share-sheet__host {
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--share-muted);
+}
+
+.share-sheet__name {
+    font-size: 0.9rem;
+    font-weight: 800;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.share-sheet__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.share-sheet__platform {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    width: 100%;
+    padding: 0.5rem 0.25rem;
+    border: 0;
+    border-radius: 0.9rem;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.share-sheet__platform:hover,
+.share-sheet__platform:focus-visible {
+    background: var(--share-surface);
+}
+
+.share-sheet__mark {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 999px;
+    background: var(--share-brand, var(--share-fg));
+    color: var(--share-brand-fg, #fff);
+    font-size: 1.25rem;
+    transition: transform 0.15s ease;
+}
+
+.share-sheet__platform:hover .share-sheet__mark {
+    transform: translateY(-2px);
+}
+
+.share-sheet__label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--share-muted);
+}
+
+.share-sheet__field {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.share-sheet__field label,
+.share-sheet__qr summary {
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--share-muted);
+}
+
+.share-sheet__copy {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.35rem;
+    border: 1px solid var(--share-border);
+    border-radius: 0.75rem;
+    background: var(--share-surface);
+}
+
+.share-sheet__copy:focus-within {
+    border-color: var(--share-focus);
+}
+
+.share-sheet__copy input,
+.share-sheet__field textarea {
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.85rem;
+    outline: none;
+}
+
+.share-sheet__copy input {
+    padding-inline: 0.6rem;
+}
+
+.share-sheet__field textarea {
+    padding: 0.6rem;
+    border: 1px solid var(--share-border);
+    border-radius: 0.75rem;
+    background: var(--share-surface);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.75rem;
+    resize: none;
+}
+
+.share-sheet__copy-button,
+.share-sheet__native {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.6rem 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.6rem;
+    background: var(--share-fg);
+    color: var(--share-bg);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.share-sheet__native {
+    width: 100%;
+    border-color: var(--share-border);
+    background: none;
+    color: inherit;
+}
+
+.share-sheet__qr summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    list-style: none;
+}
+
+.share-sheet__qr summary::-webkit-details-marker {
+    display: none;
+}
+
+.share-sheet__qr-code {
+    display: grid;
+    place-items: center;
+    margin-top: 0.75rem;
+    padding: 1rem;
+    border-radius: 0.9rem;
+    /* QR codes need a light background to scan, whatever the theme. */
+    background: #fff;
+    color: #000;
+}
+
+.share-sheet__qr-code svg {
+    width: min(14rem, 100%);
+    height: auto;
+}
+
+.share-sheet__qr p {
+    margin: 0.5rem 0 0;
+    font-size: 0.75rem;
+    color: var(--share-muted);
+    text-align: center;
+}

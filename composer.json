@@ -1,0 +1,81 @@
+{
+    "name": "atannex/share",
+    "description": "Share anything to any platform from Laravel: models, links, text or files to 35+ networks and apps, with correctly encoded intent links, per-platform text limits, signed and counted share redirects, copy/native/QR/embed actions, drop-in Blade buttons and share sheet, Open Graph tags and a link-preview inspector.",
+    "keywords": [
+        "laravel",
+        "share",
+        "social",
+        "share-buttons",
+        "social-share",
+        "open-graph",
+        "web-share-api",
+        "whatsapp",
+        "facebook",
+        "twitter",
+        "x",
+        "linkedin",
+        "bluesky",
+        "mastodon"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Atanga Leke Collins",
+            "email": "atangageihlekecollins@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/console": "^11.0|^12.0",
+        "illuminate/database": "^11.0|^12.0",
+        "illuminate/http": "^11.0|^12.0",
+        "illuminate/routing": "^11.0|^12.0",
+        "illuminate/support": "^11.0|^12.0",
+        "illuminate/view": "^11.0|^12.0"
+    },
+    "require-dev": {
+        "bacon/bacon-qr-code": "^3.0",
+        "guzzlehttp/guzzle": "^7.8",
+        "orchestra/testbench": "^9.0|^10.0",
+        "phpunit/phpunit": "^11.5"
+    },
+    "suggest": {
+        "bacon/bacon-qr-code": "QR codes in the share sheet (\"qr\" platform) and Share::qr() (^2.0|^3.0).",
+        "guzzlehttp/guzzle": "For php artisan share:inspect."
+    },
+    "autoload": {
+        "psr-4": {
+            "Atannex\\Share\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Atannex\\Share\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Atannex\\Share\\ShareServiceProvider"
+            ],
+            "aliases": {
+                "Share": "Atannex\\Share\\Facades\\Share"
+            }
+        },
+        "branch-alias": {
+            "dev-main": "1.x-dev"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
