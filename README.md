@@ -7,11 +7,3 @@ Lets people share pages, links, text or files from a Laravel site to more than 3
 ```bash
 composer require atannex/share
 ```
-
-## Documentation
-
-The full guide is in [docs/README.md](docs/README.md).
-
-## License
-
-MIT.
