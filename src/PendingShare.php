@@ -260,7 +260,7 @@ final class PendingShare implements Arrayable, Htmlable, JsonSerializable, Respo
         $maxBytes = (int) $this->manager->config('file_share_max_mb', 60) * 1024 * 1024;
 
         return array_filter([
-            'beacon' => $this->track && $tracker->enabled() ? $tracker->beacon($data) : null,
+            'beacon' => $this->track && $tracker->enabled() ? $tracker->beacon($data, $this->beaconPlatforms()) : null,
             'title' => $data->title,
             'text' => $data->message(),
             'url' => $data->url === null ? null : ($this->utm ? $this->manager->composer()->tag($data->url, 'native', 'share') : $data->url),
@@ -268,6 +268,19 @@ final class PendingShare implements Arrayable, Htmlable, JsonSerializable, Respo
             // Files of unknown size are cut off at this many bytes while they download.
             'maxBytes' => $files === [] ? null : $maxBytes,
         ], fn ($value) => $value !== null && $value !== []);
+    }
+
+    /**
+     * The platforms the page may report by beacon: those offered here that the
+     * server can't see, plus copy and embed, which the sheet always shows.
+     *
+     * @return list<string>
+     */
+    private function beaconPlatforms(): array
+    {
+        $keys = $this->links()->filter(fn (Link $link) => $link->beacon())->keys()->all();
+
+        return [...$keys, 'copy', 'embed'];
     }
 
     /** An SVG QR code of the address (needs bacon/bacon-qr-code). */

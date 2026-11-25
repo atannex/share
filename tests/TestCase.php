@@ -28,7 +28,8 @@ abstract class TestCase extends Orchestra
 
     protected function defineEnvironment($app): void
     {
-        $app['config']->set('database.default', 'testing');
+        // In-memory SQLite unless DB_CONNECTION names another (CI also runs PostgreSQL and MySQL).
+        $app['config']->set('database.default', env('DB_CONNECTION', 'testing'));
         $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('a', 32)));
         $app['config']->set('cache.default', 'array');
         $app['config']->set('share.via', 'atannex');
@@ -48,6 +49,11 @@ abstract class TestCase extends Orchestra
     protected function defineDatabaseMigrations(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+
+        // A real database keeps tables between tests; in-memory SQLite starts empty.
+        foreach (['articles', 'tags', 'people'] as $fixture) {
+            Schema::dropIfExists($fixture);
+        }
 
         Schema::create('articles', function (Blueprint $table) {
             $table->id();

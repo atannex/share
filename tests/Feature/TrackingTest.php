@@ -159,4 +159,29 @@ final class TrackingTest extends TestCase
 
         $this->post($beacon, ['platform' => ['copy']], $this->browser())->assertStatus(422);
     }
+
+    #[Test]
+    public function a_beacon_only_counts_the_platforms_its_page_offered(): void
+    {
+        $article = $this->article();
+        $beacon = $article->share()->only('whatsapp', 'copy')->client()['beacon'];
+
+        $this->post($beacon, ['platform' => 'copy'], $this->browser())->assertNoContent();
+        $this->post($beacon, ['platform' => 'sms'], $this->browser())->assertStatus(422);
+        $this->post(str_replace('p=copy', 'p=copy%2Csms', $beacon), ['platform' => 'sms'], $this->browser())->assertForbidden();
+
+        $this->assertSame(['copy' => 1], $article->shareBreakdown());
+    }
+
+    #[Test]
+    public function share_counts_load_lazily_and_eagerly(): void
+    {
+        $article = $this->article();
+        Share::record('copy', 'http://localhost/stories/story', $article);
+        Share::record('x', 'http://localhost/stories/story', $article);
+
+        $this->assertSame(2, (int) $article->shareCounts()->sum('total'));
+        $this->assertSame(2, Article::with('shareCounts')->find($article->id)->shareCounts->sum('total'));
+        $this->assertSame(2, (int) Article::withShareCount()->find($article->id)->shares_count);
+    }
 }

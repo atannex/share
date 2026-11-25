@@ -51,13 +51,20 @@ final class Tracker
     }
 
     /**
-     * Where the page script reports shares done in the browser.
+     * Where the page script reports shares done in the browser. The platforms
+     * the page offers are signed in, so the address can't count others.
+     *
+     * @param  list<string>  $platforms
      */
-    public function beacon(ShareData $share): string
+    public function beacon(ShareData $share, array $platforms): string
     {
+        $platforms = array_values(array_unique($platforms));
+        sort($platforms);
+
         return $this->absolute($this->urls->signedRoute('share.beacon', array_filter([
             'u' => $share->url,
             'ref' => $share->subject?->reference(),
+            'p' => implode(',', $platforms),
         ]), absolute: false));
     }
 

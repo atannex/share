@@ -6,6 +6,7 @@ namespace Atannex\Share\Concerns;
 
 use Atannex\Share\Models\ShareCount;
 use Atannex\Share\PendingShare;
+use Atannex\Share\Relations\ShareCounts;
 use Atannex\Share\ShareManager;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,7 +31,11 @@ trait HasShares
      */
     public function shareCounts(): MorphMany
     {
-        return $this->morphMany(ShareCount::class, 'shareable');
+        // morphMany(ShareCount::class, 'shareable'), with keys compared as strings (see ShareCounts).
+        $related = $this->newRelatedInstance(ShareCount::class);
+        $table = $related->getTable();
+
+        return new ShareCounts($related->newQuery(), $this, $table.'.shareable_type', $table.'.shareable_id', $this->getKeyName());
     }
 
     /**
