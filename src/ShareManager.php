@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 use RuntimeException;
+use Throwable;
 
 /**
  * The Share facade's root: turns anything into a share and its links, and
@@ -162,7 +163,16 @@ final class ShareManager
             userId: $request?->user()?->getAuthIdentifier(),
         );
 
-        $this->recorder()->record($event);
+        try {
+            $this->recorder()->record($event);
+        } catch (Throwable $exception) {
+            if ($request !== null) {
+                $this->tracker->forget($request, $platform, $url, $subject);
+            }
+
+            throw $exception;
+        }
+
         $this->events->dispatch($event);
 
         return true;

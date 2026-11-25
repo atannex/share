@@ -5,7 +5,9 @@
     const script = document.currentScript;
     const messages = readJson(script && script.dataset.shareMessages);
     const prepared = new WeakMap();
+    const pending = new WeakMap();
     const timers = new WeakMap();
+    let pressedOnBackdrop = false;
 
     /*
      *   [data-share]               a share: its settings (beacon, title, text, url, files)
@@ -22,19 +24,32 @@
      */
 
     document.addEventListener('click', onClick);
+    document.addEventListener('pointerdown', (event) => {
+        pressedOnBackdrop = isSheet(event.target) && outsidePanel(event);
+    });
     document.addEventListener('focusin', (event) => {
         if (event.target.matches && event.target.matches('[data-share-select]')) event.target.select();
     });
     document.addEventListener('toggle', onToggle, true);
 
+    // Turbo caches the page as it is: don't keep an open sheet in the snapshot.
+    document.addEventListener('turbo:before-cache', () => {
+        document.querySelectorAll('dialog[data-share-sheet][open]').forEach((sheet) => sheet.close());
+    });
+
     reveal(document);
     new MutationObserver((records) => {
         for (const record of records) {
+            // Livewire morphs put "hidden" back on buttons this script revealed.
+            if (record.type === 'attributes') {
+                if (record.target.hidden) reveal(record.target);
+                continue;
+            }
             for (const node of record.addedNodes) {
                 if (node.nodeType === 1) reveal(node);
             }
         }
-    }).observe(document.documentElement, { childList: true, subtree: true });
+    }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
 
     function onClick(event) {
         const opener = event.target.closest('[data-share-open]');
@@ -43,7 +58,11 @@
         const closer = event.target.closest('[data-share-close]');
         if (closer) return closer.closest('dialog')?.close();
 
-        if (event.target.matches('dialog[data-share-sheet]')) return backdrop(event);
+        if (isSheet(event.target)) {
+            // Only a press that started on the backdrop closes it, not a text selection dragged out of the panel.
+            if (pressedOnBackdrop && outsidePanel(event)) event.target.close();
+            return;
+        }
 
         const button = event.target.closest('[data-share-platform]');
         if (!button || button.matches('details')) return;
@@ -56,7 +75,7 @@
         if (action === 'native') return native(root, button);
         if (action === 'print') {
             window.print();
-            return shared(root, platform);
+            return shared(root, platform, true);
         }
 
         if (button.hasAttribute('data-share-popup')) popup(event, button);
@@ -66,6 +85,8 @@
     /* Web platforms ------------------------------------------------------- */
 
     function popup(event, link) {
+        // Ctrl/Cmd/Shift/middle click: the reader chose where it opens.
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         if (!window.matchMedia('(min-width: 768px) and (pointer: fine)').matches) return;
 
         const [width, height] = (link.dataset.sharePopup || '620x680').split('x').map(Number);
@@ -106,14 +127,23 @@
     }
 
     function legacyCopy(text) {
+        const active = document.activeElement;
         const area = document.createElement('textarea');
         area.value = text;
         area.setAttribute('readonly', '');
-        area.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+        area.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
         (document.querySelector('dialog[open]') || document.body).append(area);
+        area.focus({ preventScroll: true });
         area.select();
-        const ok = document.execCommand('copy');
-        area.remove();
+        area.setSelectionRange(0, text.length); // iOS ignores select() on readonly fields
+
+        let ok = false;
+        try {
+            ok = document.execCommand('copy');
+        } finally {
+            area.remove();
+            if (active && active.focus) active.focus({ preventScroll: true });
+        }
         if (!ok) throw new Error('copy failed');
     }
 
@@ -144,11 +174,12 @@
 
         // Files (a video for Instagram or TikTok…): fetch first, then share on a second tap,
         // because the browser only allows share() straight after a tap.
-        if (button.hasAttribute('data-share-files') && config.files && config.files.length && canShareFiles(config.files)) {
+        const withFiles = button.hasAttribute('data-share-files') && !button.dataset.shareFilesFailed;
+        if (withFiles && config.files && config.files.length && canShareFiles(config.files)) {
             const files = prepared.get(button);
 
             if (!files) {
-                return prepare(root, button, config.files);
+                return prepare(root, button, config);
             }
 
             prepared.delete(button);
@@ -160,9 +191,11 @@
     }
 
     async function run(root, data, button) {
+        if (typeof navigator.share !== 'function') return;
+
         try {
             await navigator.share(data);
-            shared(root, button.dataset.sharePlatform || 'native', true);
+            shared(root, (button && button.dataset.sharePlatform) || 'native', true);
         } catch (error) {
             // AbortError: the reader closed the sheet.
             if (error && error.name !== 'AbortError') console.warn('[share]', error);
@@ -179,28 +212,49 @@
         }
     }
 
-    async function prepare(root, button, list) {
+    async function prepare(root, button, config) {
+        if (pending.has(button)) return;
+
         const label = button.querySelector('span:last-child');
+        const controller = new AbortController();
+        const sheet = button.closest('dialog');
+        // Downloads can be large: stop them, and let go of the files, when the sheet closes.
+        const drop = () => {
+            controller.abort();
+            prepared.delete(button);
+            restore(button);
+        };
+
         button.dataset.shareLabel ??= label ? label.textContent : '';
         button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        pending.set(button, controller);
+        if (sheet) sheet.addEventListener('close', drop, { once: true });
 
         try {
             const files = [];
-            for (const file of list) {
-                files.push(await download(file, (percent) => {
+            for (const file of config.files) {
+                files.push(await download(file, config.maxBytes, controller.signal, (percent) => {
                     if (label) label.textContent = `${messages.preparing || '…'} ${percent}%`;
                 }));
             }
             prepared.set(button, files);
             if (label) label.textContent = messages.ready || button.dataset.shareLabel;
             button.classList.add('is-ready');
-        } catch {
+            announce(root, messages.ready);
+            if (!sheet) timers.set(button, setTimeout(drop, 120000));
+        } catch (error) {
+            if (sheet) sheet.removeEventListener('close', drop);
             restore(button);
-            announce(root, messages.fileFailed);
-            const config = settings(root);
-            await run(root, { title: config.title, text: config.text, url: config.url }, button);
+            if (!error || error.name !== 'AbortError') {
+                // The tap is too old to open the share sheet now; the next tap shares the link instead.
+                button.dataset.shareFilesFailed = '1';
+                announce(root, messages.fileFailed);
+            }
         } finally {
+            pending.delete(button);
             button.disabled = false;
+            button.removeAttribute('aria-busy');
         }
     }
 
@@ -210,11 +264,14 @@
         button.classList.remove('is-ready');
     }
 
-    async function download(file, progress) {
-        const response = await fetch(file.url, { credentials: 'same-origin' });
+    async function download(file, maxBytes, signal, progress) {
+        const response = await fetch(file.url, { credentials: 'same-origin', signal });
         if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`);
 
         const total = Number(response.headers.get('Content-Length')) || file.size || 0;
+        const limit = Number(maxBytes) || Infinity;
+        if (total > limit) throw new Error('file too large');
+
         const reader = response.body.getReader();
         const chunks = [];
         let received = 0;
@@ -222,8 +279,12 @@
         for (;;) {
             const { done: finished, value } = await reader.read();
             if (finished) break;
-            chunks.push(value);
             received += value.length;
+            if (received > limit) {
+                reader.cancel();
+                throw new Error('file too large');
+            }
+            chunks.push(value);
             if (total) progress(Math.min(99, Math.round((received / total) * 100)));
         }
 
@@ -237,20 +298,22 @@
         const sheet = document.getElementById(id);
         if (!sheet || typeof sheet.showModal !== 'function' || sheet.open) return;
 
+        // Page scrolling is locked in CSS while a sheet is open (html:has(...)), so it can't get stuck.
         sheet.showModal();
-        document.documentElement.classList.add('share-locked');
         if (section) document.getElementById(section)?.scrollIntoView({ block: 'start' });
         sheet.addEventListener('close', () => {
-            document.documentElement.classList.remove('share-locked');
-            opener && opener.focus && opener.focus();
+            if (opener && opener.isConnected && opener.focus) opener.focus();
         }, { once: true });
     }
 
-    function backdrop(event) {
+    function isSheet(element) {
+        return !!(element && element.matches && element.matches('dialog[data-share-sheet]'));
+    }
+
+    function outsidePanel(event) {
         const sheet = event.target;
         const box = sheet.querySelector('.share-sheet__panel')?.getBoundingClientRect() || sheet.getBoundingClientRect();
-        const inside = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom;
-        if (!inside) sheet.close();
+        return event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
     }
 
     function onToggle(event) {
@@ -309,5 +372,8 @@
         }
     }
 
-    window.AtannexShare = { open: openSheet, share: native };
+    window.AtannexShare = {
+        open: openSheet,
+        share: (root, button) => native(root, button || root.querySelector('[data-share-action="native"]') || root),
+    };
 })();

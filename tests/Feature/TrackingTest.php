@@ -140,4 +140,23 @@ final class TrackingTest extends TestCase
         Share::assertNotShared('x');
         $this->assertSame(0, ShareCount::count());
     }
+
+    #[Test]
+    public function repeated_shares_add_up_in_one_row(): void
+    {
+        $recorder = new \Atannex\Share\Recorders\DatabaseRecorder;
+        $recorder->record(new Shared('x', 'https://example.test/a'));
+        $recorder->record(new Shared('x', 'https://example.test/a'));
+
+        $this->assertSame(1, ShareCount::count());
+        $this->assertSame(2, Share::count('https://example.test/a'));
+    }
+
+    #[Test]
+    public function a_malformed_beacon_platform_is_rejected(): void
+    {
+        $beacon = $this->article()->share()->client()['beacon'];
+
+        $this->post($beacon, ['platform' => ['copy']], $this->browser())->assertStatus(422);
+    }
 }

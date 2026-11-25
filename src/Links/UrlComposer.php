@@ -37,7 +37,7 @@ final class UrlComposer
         }
 
         $values = $this->placeholders($tagged, $platform);
-        $url = $this->fill((string) $platform->url, array_map('strval', $platform->options));
+        $url = $this->fill((string) $platform->url, $this->options($platform));
         $query = [];
 
         foreach ($platform->query as $parameter => $template) {
@@ -107,7 +107,8 @@ final class UrlComposer
 
         $join = fn (string ...$parts) => implode("\n\n", array_filter($parts, fn ($part) => $part !== ''));
 
-        return array_map('strval', $platform->options) + [
+        // The share's own values win over a platform option of the same name.
+        return [
             'url' => $url,
             'title' => $title,
             'message' => $message,
@@ -121,7 +122,17 @@ final class UrlComposer
             'first_hashtag' => $hashtags === [] ? '' : '#'.$hashtags[0],
             'tags' => implode(',', $hashtags),
             'site' => (string) $share->siteName,
-        ];
+        ] + $this->options($platform);
+    }
+
+    /**
+     * The platform's extra keys usable as placeholders ({instance}); arrays can't be.
+     *
+     * @return array<string, string>
+     */
+    private function options(Platform $platform): array
+    {
+        return array_map('strval', array_filter($platform->options, 'is_scalar'));
     }
 
     /**

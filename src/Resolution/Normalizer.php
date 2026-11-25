@@ -12,6 +12,7 @@ use Illuminate\Contracts\Routing\UrlGenerator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Stringable;
+use Traversable;
 
 /**
  * Turns loose values into clean share fields: plain text from HTML,
@@ -171,7 +172,13 @@ final class Normalizer
             return [];
         }
 
-        $value = is_array($value) && (isset($value['url']) || ! array_is_list($value)) ? [$value] : (array) $value;
+        $value = match (true) {
+            $value instanceof Traversable => iterator_to_array($value, false),
+            // One file: (array) on an object would turn its properties into "files".
+            is_object($value), is_string($value) => [$value],
+            is_array($value) && (isset($value['url']) || ! array_is_list($value)) => [$value],
+            default => (array) $value,
+        };
         $files = [];
 
         foreach ($value as $file) {

@@ -264,7 +264,9 @@ final class PendingShare implements Arrayable, Htmlable, JsonSerializable, Respo
             'title' => $data->title,
             'text' => $data->message(),
             'url' => $data->url === null ? null : ($this->utm ? $this->manager->composer()->tag($data->url, 'native', 'share') : $data->url),
-            'files' => array_values(array_filter($data->files, fn ($file) => $file['size'] === null || $file['size'] <= $maxBytes)),
+            'files' => $files = array_values(array_filter($data->files, fn ($file) => $file['size'] === null || $file['size'] <= $maxBytes)),
+            // Files of unknown size are cut off at this many bytes while they download.
+            'maxBytes' => $files === [] ? null : $maxBytes,
         ], fn ($value) => $value !== null && $value !== []);
     }
 

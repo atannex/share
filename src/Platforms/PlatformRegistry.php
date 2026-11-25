@@ -47,6 +47,7 @@ final class PlatformRegistry
      */
     public function define(string $key, array|Platform $definition): void
     {
+        $key = strtolower($key);
         unset($this->built[$key]);
         $this->aliases = [];
 
@@ -79,7 +80,7 @@ final class PlatformRegistry
         if ($this->aliases === []) {
             foreach ($this->all() as $platform) {
                 foreach ($platform->aliases as $alias) {
-                    $this->aliases[$alias] = $platform->key;
+                    $this->aliases[strtolower($alias)] = $platform->key;
                 }
             }
         }

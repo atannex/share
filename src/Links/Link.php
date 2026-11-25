@@ -65,7 +65,8 @@ final class Link implements Arrayable, Htmlable, JsonSerializable
         if ($this->href !== null) {
             $attributes['href'] = $this->href;
             $attributes['rel'] = 'nofollow noopener noreferrer';
-            if (! in_array(parse_url($this->href, PHP_URL_SCHEME), ['mailto', 'sms'], true)) {
+            // Only web pages get a new tab; app schemes (mailto:, sms:, viber://…) would leave an empty one behind.
+            if (in_array(strtolower((string) parse_url($this->href, PHP_URL_SCHEME)), ['http', 'https'], true)) {
                 $attributes['target'] = '_blank';
             }
         }

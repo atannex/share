@@ -35,7 +35,8 @@ final class DatabaseRecorder implements Recorder
             ]],
             ['url_hash', 'platform', 'date'],
             [
-                'total' => DB::raw($model->getConnection()->getQueryGrammar()->wrap('total').' + 1'),
+                // Qualified: PostgreSQL and SQL Server also see the incoming row's "total".
+                'total' => DB::raw($model->getConnection()->getQueryGrammar()->wrap($model->getTable().'.total').' + 1'),
                 'updated_at' => $now,
             ],
         );

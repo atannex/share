@@ -29,7 +29,8 @@ abstract class ShareComponent extends Component
         string|array|null $except = null,
         ?string $preset = null,
     ) {
-        $this->pending = $share instanceof PendingShare ? $share : app(ShareManager::class)->for($for);
+        // A copy: only/except/preset here must not change the caller's share for the components after it.
+        $this->pending = $share instanceof PendingShare ? clone $share : app(ShareManager::class)->for($for);
 
         if ($preset !== null) {
             $this->pending->preset($preset);

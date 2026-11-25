@@ -20,8 +20,8 @@ final class BeaconController
     {
         abort_unless($request->hasValidSignature(false), 403);
 
-        $platform = (string) $request->input('platform');
-        abort_unless($share->platforms()->has($platform) && ! $share->platform($platform)->redirects(), 422);
+        $platform = $request->input('platform');
+        abort_unless(is_string($platform) && $share->platforms()->has($platform) && ! $share->platform($platform)->redirects(), 422);
 
         $share->record($platform, $request->query('u'), Subject::parse($request->query('ref')), $request);
 

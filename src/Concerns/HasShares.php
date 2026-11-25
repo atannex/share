@@ -54,6 +54,20 @@ trait HasShares
      */
     public function scopeWithShareCount(Builder $query): void
     {
-        $query->withSum('shareCounts as shares_count', 'total');
+        $model = $query->getModel();
+        $grammar = $query->getQuery()->getGrammar();
+        $key = $grammar->wrap($model->getQualifiedKeyName());
+        // shareable_id is a string column; PostgreSQL won't compare it with an integer key.
+        $key = $model->getConnection()->getDriverName() === 'pgsql' ? "{$key}::text" : $key;
+
+        if ($query->getQuery()->columns === null) {
+            $query->select($model->qualifyColumn('*'));
+        }
+
+        // coalesce: models never shared get 0, not null (which PostgreSQL sorts first).
+        $query->addSelect(['shares_count' => ShareCount::query()
+            ->selectRaw('coalesce(sum('.$grammar->wrap('total').'), 0)')
+            ->where('shareable_type', $model->getMorphClass())
+            ->whereRaw($grammar->wrap((new ShareCount)->qualifyColumn('shareable_id')).' = '.$key)]);
     }
 }

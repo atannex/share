@@ -54,6 +54,7 @@ final class ShareServiceProvider extends ServiceProvider
             $app['config']->get('share.tracking.enabled', true) && $app['config']->get('share.routes.enabled', true),
             $app['cache']->store($app['config']->get('share.tracking.cache')),
             (int) $app['config']->get('share.tracking.dedupe', 30),
+            $app['config']->get('share.routes.domain'),
         ));
 
         $this->app->singleton(ShareManager::class, fn (Application $app) => new ShareManager(
@@ -106,7 +107,8 @@ final class ShareServiceProvider extends ServiceProvider
         }
 
         Route::group(array_filter([
-            'prefix' => $config['prefix'] ?? 'share',
+            // An empty prefix would put {platform} at the root of the site and shadow its pages.
+            'prefix' => ($config['prefix'] ?? null) ?: 'share',
             'domain' => $config['domain'] ?? null,
             'middleware' => $middleware,
         ]), function () {
@@ -126,8 +128,9 @@ final class ShareServiceProvider extends ServiceProvider
         $recorder = $app['config']->get('share.tracking.recorder', 'database');
 
         return match ($recorder) {
-            'database', null => new DatabaseRecorder,
-            'null', 'none', false => new NullRecorder,
+            'database' => new DatabaseRecorder,
+            // env('SHARE_RECORDER') turns "null" into null.
+            'null', 'none', null, false => new NullRecorder,
             default => is_string($recorder) && is_subclass_of($recorder, Recorder::class)
                 ? $app->make($recorder)
                 : throw new InvalidArgumentException("Share recorder [{$recorder}] must be \"database\", \"null\" or a class implementing ".Recorder::class.'.'),

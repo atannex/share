@@ -4,36 +4,59 @@
     --share-size: 2.5rem;
     --share-radius: 999px;
     --share-font: inherit;
-    --share-fg: #1f2937;
-    --share-muted: #6b7280;
+    --share-fg: #18181b;
+    --share-muted: #71717a;
     --share-bg: #ffffff;
-    --share-surface: #f3f4f6;
-    --share-border: #d1d5db;
+    --share-surface: #f4f4f5;
+    --share-border: #e4e4e7;
     --share-focus: #2563eb;
     --share-success: #16a34a;
     --share-sheet-width: 34rem;
-    --share-shadow: 0 24px 64px -16px rgb(0 0 0 / 0.35);
+    --share-sheet-radius: 1.5rem;
+    --share-shadow:
+        0 1px 2px rgb(0 0 0 / 0.04),
+        0 12px 24px -6px rgb(0 0 0 / 0.12),
+        0 32px 64px -12px rgb(0 0 0 / 0.22);
+    --share-shadow-button: 0 1px 2px rgb(0 0 0 / 0.05);
+    --share-shadow-hover: 0 6px 16px -6px rgb(0 0 0 / 0.25);
+    --share-backdrop: rgb(9 9 11 / 0.5);
+    --share-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --share-duration: 0.18s;
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme='light']):not(.light) {
-        --share-fg: #f3f4f6;
-        --share-muted: #9ca3af;
-        --share-bg: #111827;
-        --share-surface: #1f2937;
-        --share-border: #374151;
+        --share-fg: #fafafa;
+        --share-muted: #a1a1aa;
+        --share-bg: #18181b;
+        --share-surface: #27272a;
+        --share-border: #3f3f46;
         --share-focus: #60a5fa;
+        --share-success: #4ade80;
+        --share-backdrop: rgb(0 0 0 / 0.65);
+        --share-shadow-button: 0 1px 2px rgb(0 0 0 / 0.3);
+        --share-shadow-hover: 0 6px 16px -6px rgb(0 0 0 / 0.6);
     }
 }
 
 :root[data-theme='dark'],
 :root.dark {
-    --share-fg: #f3f4f6;
-    --share-muted: #9ca3af;
-    --share-bg: #111827;
-    --share-surface: #1f2937;
-    --share-border: #374151;
+    --share-fg: #fafafa;
+    --share-muted: #a1a1aa;
+    --share-bg: #18181b;
+    --share-surface: #27272a;
+    --share-border: #3f3f46;
     --share-focus: #60a5fa;
+    --share-success: #4ade80;
+    --share-backdrop: rgb(0 0 0 / 0.65);
+    --share-shadow-button: 0 1px 2px rgb(0 0 0 / 0.3);
+    --share-shadow-hover: 0 6px 16px -6px rgb(0 0 0 / 0.6);
+}
+
+/* The script reveals what the device supports; the rules below set display, so restate hidden. */
+.share [hidden],
+.share-sheet [hidden] {
+    display: none !important;
 }
 
 /* Buttons ------------------------------------------------------------------- */
@@ -44,11 +67,13 @@
     align-items: center;
     gap: var(--share-gap);
     font-family: var(--share-font);
+    -webkit-font-smoothing: antialiased;
 }
 
 .share--vertical {
     flex-direction: column;
     flex-wrap: nowrap;
+    align-items: stretch;
 }
 
 .share--sm {
@@ -60,20 +85,21 @@
 }
 
 .share__heading {
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 0.18em;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--share-muted);
-    margin-inline-end: 0.25rem;
+    margin-inline-end: 0.375rem;
 }
 
-.share__button {
+.share__item {
     position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    box-sizing: border-box;
     min-width: var(--share-size);
     height: var(--share-size);
     padding: 0;
@@ -81,57 +107,71 @@
     border-radius: var(--share-radius);
     background: var(--share-bg);
     color: var(--share-fg);
+    box-shadow: var(--share-shadow-button);
     font: inherit;
     font-size: calc(var(--share-size) * 0.36);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1;
+    letter-spacing: -0.005em;
     text-decoration: none;
+    white-space: nowrap;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
     transition:
-        background-color 0.15s ease,
-        border-color 0.15s ease,
-        color 0.15s ease,
-        transform 0.15s ease;
+        background-color var(--share-duration) var(--share-ease),
+        border-color var(--share-duration) var(--share-ease),
+        color var(--share-duration) var(--share-ease),
+        box-shadow var(--share-duration) var(--share-ease),
+        transform var(--share-duration) var(--share-ease),
+        filter var(--share-duration) var(--share-ease);
 }
 
-.share__button .share-icon {
+.share__item .share-icon {
     width: 1.15em;
     height: 1.15em;
     flex: none;
 }
 
-.share__button:hover,
-.share__button:focus-visible {
+.share__item:hover,
+.share__item:focus-visible {
     border-color: var(--share-brand, var(--share-fg));
     background: var(--share-brand, var(--share-fg));
     color: var(--share-brand-fg, var(--share-bg));
+    box-shadow: var(--share-shadow-hover);
+    transform: translateY(-1px);
 }
 
-.share__button:active {
-    transform: scale(0.96);
+.share__item:active {
+    transform: translateY(0) scale(0.96);
+    box-shadow: var(--share-shadow-button);
 }
 
-.share__button:focus-visible,
+.share__item:focus-visible,
 .share-sheet :focus-visible {
     outline: 2px solid var(--share-focus);
     outline-offset: 2px;
 }
 
-.share__button[disabled] {
+.share__item[disabled] {
     opacity: 0.6;
     cursor: progress;
+    transform: none;
 }
 
-.share__label {
+.share__name {
     display: none;
 }
 
-.share--labels .share__button {
-    padding-inline: calc(var(--share-size) * 0.4);
+.share--labels .share__item {
+    padding-inline: calc(var(--share-size) * 0.42);
 }
 
-.share--labels .share__label {
+.share--labels .share__name {
     display: inline;
+}
+
+.share--vertical.share--labels .share__item {
+    justify-content: flex-start;
 }
 
 /* Visually hidden, read by screen readers. */
@@ -145,27 +185,27 @@
 }
 
 /* brand: filled in each platform's colour */
-.share--brand .share__button {
+.share--brand .share__item {
     border-color: transparent;
     background: var(--share-brand, var(--share-fg));
     color: var(--share-brand-fg, #fff);
 }
 
-.share--brand .share__button:hover,
-.share--brand .share__button:focus-visible {
-    filter: brightness(1.1);
+.share--brand .share__item:hover,
+.share--brand .share__item:focus-visible {
+    filter: brightness(1.08) saturate(1.05);
 }
 
 /* Black marks (X, Threads) keep an edge on dark pages. */
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme='light']):not(.light) .share--brand .share__button,
+    :root:not([data-theme='light']):not(.light) .share--brand .share__item,
     :root:not([data-theme='light']):not(.light) .share-sheet__mark {
         box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
     }
 }
 
-:root[data-theme='dark'] .share--brand .share__button,
-:root.dark .share--brand .share__button,
+:root[data-theme='dark'] .share--brand .share__item,
+:root.dark .share--brand .share__item,
 :root[data-theme='dark'] .share-sheet__mark,
 :root.dark .share-sheet__mark {
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
@@ -173,22 +213,27 @@
 
 /* minimal: text links */
 .share--minimal {
-    gap: 1rem;
+    gap: 1.125rem;
 }
 
-.share--minimal .share__button {
+.share--minimal .share__item {
     min-width: 0;
     height: auto;
-    padding: 0;
+    padding: 0.25rem 0;
     border: 0;
+    border-radius: 0.25rem;
     background: none;
+    box-shadow: none;
     color: var(--share-muted);
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 500;
 }
 
-.share--minimal .share__button:hover,
-.share--minimal .share__button:focus-visible {
+.share--minimal .share__item:hover,
+.share--minimal .share__item:focus-visible {
     background: none;
+    box-shadow: none;
+    transform: none;
     color: var(--share-brand, var(--share-fg));
 }
 
@@ -205,6 +250,14 @@
 .is-done > .share__done {
     display: inline-flex;
     color: var(--share-success);
+    animation: share-pop 0.3s var(--share-ease);
+}
+
+@keyframes share-pop {
+    from {
+        transform: scale(0.6);
+        opacity: 0;
+    }
 }
 
 .is-ready {
@@ -220,52 +273,94 @@
 
 /* Sheet --------------------------------------------------------------------- */
 
+/* Follows the dialog itself, so a sheet removed without closing (Turbo, Livewire) can't leave the page locked. */
+html:has(dialog[data-share-sheet][open]),
 .share-locked {
     overflow: hidden;
 }
 
 .share-sheet {
+    box-sizing: border-box;
     width: min(var(--share-sheet-width), calc(100vw - 2rem));
+    max-width: none;
     max-height: min(88dvh, 52rem);
     margin: auto;
     padding: 0;
     border: 1px solid var(--share-border);
-    border-radius: 1.25rem;
+    border-radius: var(--share-sheet-radius);
     background: var(--share-bg);
     color: var(--share-fg);
     font-family: var(--share-font);
+    -webkit-font-smoothing: antialiased;
     box-shadow: var(--share-shadow);
     overflow: hidden;
+    overscroll-behavior: contain;
+}
+
+.share-sheet *,
+.share-sheet *::before,
+.share-sheet *::after {
+    box-sizing: border-box;
 }
 
 .share-sheet::backdrop {
-    background: rgb(0 0 0 / 0.55);
-    backdrop-filter: blur(4px);
+    background: var(--share-backdrop);
+    backdrop-filter: blur(6px) saturate(1.2);
+    -webkit-backdrop-filter: blur(6px) saturate(1.2);
 }
 
 .share-sheet[open] {
-    animation: share-in 0.2s ease-out;
+    animation: share-in 0.26s var(--share-ease);
+}
+
+.share-sheet[open]::backdrop {
+    animation: share-fade 0.26s ease-out;
 }
 
 @keyframes share-in {
     from {
         opacity: 0;
-        transform: translateY(12px) scale(0.98);
+        transform: translateY(10px) scale(0.97);
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .share-sheet[open] {
-        animation: none;
+@keyframes share-fade {
+    from {
+        opacity: 0;
     }
 }
 
 @media (max-width: 640px) {
     .share-sheet {
         width: 100vw;
-        max-width: 100vw;
+        max-height: 92dvh;
         margin: auto 0 0;
-        border-radius: 1.25rem 1.25rem 0 0;
+        border-width: 1px 0 0;
+        border-radius: var(--share-sheet-radius) var(--share-sheet-radius) 0 0;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .share-sheet[open] {
+        animation-name: share-up;
+        animation-duration: 0.32s;
+    }
+
+    /* Grab handle, the usual bottom-sheet cue */
+    .share-sheet__panel::before {
+        content: '';
+        display: block;
+        width: 2.25rem;
+        height: 0.3125rem;
+        margin: 0.5rem auto 0;
+        border-radius: 999px;
+        background: var(--share-border);
+        flex: none;
+    }
+}
+
+@keyframes share-up {
+    from {
+        transform: translateY(100%);
     }
 }
 
@@ -280,74 +375,105 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 1rem 1.25rem;
+    padding: 1rem 1rem 1rem 1.5rem;
     border-bottom: 1px solid var(--share-border);
 }
 
 .share-sheet__title {
     margin: 0;
-    font-size: 0.8rem;
-    font-weight: 800;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    /* Set here, so the page's own h2 styles don't leak in. */
+    color: var(--share-fg);
+    font-family: inherit;
+    text-transform: none;
+    font-size: 1.0625rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
 }
 
 .share-sheet__close {
     display: grid;
     place-items: center;
+    flex: none;
     width: 2.25rem;
     height: 2.25rem;
-    border: 1px solid var(--share-border);
+    padding: 0;
+    border: 0;
     border-radius: 999px;
-    background: none;
-    color: inherit;
+    background: var(--share-surface);
+    color: var(--share-muted);
     cursor: pointer;
+    transition:
+        background-color var(--share-duration) var(--share-ease),
+        color var(--share-duration) var(--share-ease),
+        transform var(--share-duration) var(--share-ease);
+}
+
+.share-sheet__close:hover {
+    background: var(--share-border);
+    color: var(--share-fg);
+}
+
+.share-sheet__close:active {
+    transform: scale(0.92);
+}
+
+.share-sheet__close .share-icon {
+    width: 1rem;
+    height: 1rem;
 }
 
 .share-sheet__body {
     display: grid;
-    gap: 1.25rem;
-    padding: 1.25rem;
+    gap: 1.5rem;
+    padding: 1.25rem 1.5rem 1.5rem;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
 }
 
 .share-sheet__card {
     display: flex;
     align-items: center;
-    gap: 0.9rem;
+    gap: 1rem;
     margin: 0;
-    padding: 0.75rem;
+    padding: 0.625rem;
     border: 1px solid var(--share-border);
-    border-radius: 0.9rem;
+    border-radius: 1rem;
     background: var(--share-surface);
 }
 
 .share-sheet__card img {
-    width: 6rem;
-    height: 4rem;
+    width: 6.5rem;
+    height: auto;
+    aspect-ratio: 1.91 / 1;
     flex: none;
-    border-radius: 0.6rem;
+    border-radius: 0.625rem;
     object-fit: cover;
+    background: var(--share-border);
 }
 
 .share-sheet__card figcaption {
     display: grid;
     gap: 0.25rem;
     min-width: 0;
+    padding-inline-end: 0.5rem;
 }
 
 .share-sheet__host {
-    font-size: 0.65rem;
-    font-weight: 800;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    overflow: hidden;
+    font-size: 0.75rem;
+    font-weight: 500;
     color: var(--share-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .share-sheet__name {
-    font-size: 0.9rem;
-    font-weight: 800;
-    line-height: 1.3;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.005em;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -356,9 +482,9 @@
 
 .share-sheet__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
-    gap: 0.5rem;
-    margin: 0;
+    grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr));
+    gap: 0.25rem 0.375rem;
+    margin: 0 -0.375rem;
     padding: 0;
     list-style: none;
 }
@@ -367,17 +493,19 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.5rem;
     width: 100%;
-    padding: 0.5rem 0.25rem;
+    padding: 0.625rem 0.25rem;
     border: 0;
-    border-radius: 0.9rem;
+    border-radius: 1rem;
     background: none;
     color: inherit;
     font: inherit;
     text-align: center;
     text-decoration: none;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color var(--share-duration) var(--share-ease);
 }
 
 .share-sheet__platform:hover,
@@ -388,23 +516,39 @@
 .share-sheet__mark {
     display: grid;
     place-items: center;
-    width: 3rem;
-    height: 3rem;
+    width: 3.25rem;
+    height: 3.25rem;
     border-radius: 999px;
     background: var(--share-brand, var(--share-fg));
     color: var(--share-brand-fg, #fff);
-    font-size: 1.25rem;
-    transition: transform 0.15s ease;
+    font-size: 1.3rem;
+    transition:
+        transform var(--share-duration) var(--share-ease),
+        box-shadow var(--share-duration) var(--share-ease);
 }
 
-.share-sheet__platform:hover .share-sheet__mark {
+.share-sheet__platform:hover .share-sheet__mark,
+.share-sheet__platform:focus-visible .share-sheet__mark {
     transform: translateY(-2px);
+    box-shadow: var(--share-shadow-hover);
+}
+
+.share-sheet__platform:active .share-sheet__mark {
+    transform: scale(0.94);
 }
 
 .share-sheet__label {
-    font-size: 0.72rem;
-    font-weight: 700;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.75rem;
+    font-weight: 500;
     color: var(--share-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.share-sheet__platform:hover .share-sheet__label {
+    color: var(--share-fg);
 }
 
 .share-sheet__field {
@@ -414,24 +558,26 @@
 
 .share-sheet__field label,
 .share-sheet__qr summary {
-    font-size: 0.65rem;
-    font-weight: 800;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--share-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--share-fg);
 }
 
 .share-sheet__copy {
     display: flex;
-    gap: 0.4rem;
-    padding: 0.35rem;
+    gap: 0.375rem;
+    padding: 0.3125rem;
     border: 1px solid var(--share-border);
-    border-radius: 0.75rem;
+    border-radius: 0.875rem;
     background: var(--share-surface);
+    transition:
+        border-color var(--share-duration) var(--share-ease),
+        box-shadow var(--share-duration) var(--share-ease);
 }
 
 .share-sheet__copy:focus-within {
     border-color: var(--share-focus);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--share-focus) 20%, transparent);
 }
 
 .share-sheet__copy input,
@@ -442,22 +588,35 @@
     background: transparent;
     color: inherit;
     font: inherit;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     outline: none;
 }
 
 .share-sheet__copy input {
-    padding-inline: 0.6rem;
+    padding-inline: 0.625rem;
+    text-overflow: ellipsis;
+}
+
+/* The surrounding box shows focus for these, so no second outline. */
+.share-sheet__copy input:focus-visible,
+.share-sheet__field textarea:focus-visible {
+    outline: none;
 }
 
 .share-sheet__field textarea {
-    padding: 0.6rem;
+    padding: 0.75rem;
     border: 1px solid var(--share-border);
-    border-radius: 0.75rem;
+    border-radius: 0.875rem;
     background: var(--share-surface);
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--share-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.75rem;
+    line-height: 1.5;
     resize: none;
+}
+
+.share-sheet__field textarea:focus {
+    border-color: var(--share-focus);
 }
 
 .share-sheet__copy-button,
@@ -465,29 +624,70 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.45rem;
-    padding: 0.6rem 1rem;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
     border: 1px solid transparent;
-    border-radius: 0.6rem;
+    border-radius: 0.625rem;
     background: var(--share-fg);
     color: var(--share-bg);
     font: inherit;
-    font-size: 0.85rem;
-    font-weight: 800;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+        opacity var(--share-duration) var(--share-ease),
+        background-color var(--share-duration) var(--share-ease),
+        transform var(--share-duration) var(--share-ease);
+}
+
+.share-sheet__copy-button:hover {
+    opacity: 0.88;
+}
+
+.share-sheet__copy-button:active,
+.share-sheet__native:active {
+    transform: scale(0.97);
+}
+
+.share-sheet__copy-button .share-icon,
+.share-sheet__native .share-icon {
+    width: 1rem;
+    height: 1rem;
+}
+
+.share-sheet__copy-button.is-done > .share__done {
+    color: inherit;
+}
+
+.share-sheet__field > .share-sheet__copy-button {
+    justify-self: start;
 }
 
 .share-sheet__native {
     width: 100%;
+    padding-block: 0.75rem;
     border-color: var(--share-border);
     background: none;
     color: inherit;
 }
 
+.share-sheet__native:hover {
+    background: var(--share-surface);
+}
+
+.share-sheet__qr {
+    border: 1px solid var(--share-border);
+    border-radius: 0.875rem;
+}
+
 .share-sheet__qr summary {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.625rem;
+    padding: 0.75rem 1rem;
+    border-radius: inherit;
     cursor: pointer;
     list-style: none;
 }
@@ -496,25 +696,88 @@
     display: none;
 }
 
+/* Chevron that turns when the panel opens */
+.share-sheet__qr summary::after {
+    content: '';
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-inline-start: auto;
+    border-right: 1.5px solid var(--share-muted);
+    border-bottom: 1.5px solid var(--share-muted);
+    transform: translateY(-25%) rotate(45deg);
+    transition: transform var(--share-duration) var(--share-ease);
+}
+
+.share-sheet__qr[open] summary::after {
+    transform: translateY(25%) rotate(-135deg);
+}
+
+.share-sheet__qr summary .share-icon {
+    width: 1.125rem;
+    height: 1.125rem;
+    color: var(--share-muted);
+}
+
 .share-sheet__qr-code {
     display: grid;
     place-items: center;
-    margin-top: 0.75rem;
+    margin: 0 1rem;
     padding: 1rem;
-    border-radius: 0.9rem;
+    border-radius: 0.75rem;
     /* QR codes need a light background to scan, whatever the theme. */
     background: #fff;
     color: #000;
 }
 
 .share-sheet__qr-code svg {
-    width: min(14rem, 100%);
+    width: min(13rem, 100%);
     height: auto;
 }
 
 .share-sheet__qr p {
-    margin: 0.5rem 0 0;
-    font-size: 0.75rem;
+    margin: 0;
+    padding: 0.75rem 1rem 1rem;
+    font-size: 0.8125rem;
     color: var(--share-muted);
     text-align: center;
+}
+
+/* Accessibility ------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .share__item,
+    .share-sheet__close,
+    .share-sheet__platform,
+    .share-sheet__mark,
+    .share-sheet__copy,
+    .share-sheet__copy-button,
+    .share-sheet__native,
+    .share-sheet__qr summary::after {
+        transition: none;
+    }
+
+    .share__item:hover,
+    .share__item:focus-visible,
+    .share-sheet__platform:hover .share-sheet__mark,
+    .share-sheet__platform:focus-visible .share-sheet__mark {
+        transform: none;
+    }
+
+    .share-sheet[open],
+    .share-sheet[open]::backdrop,
+    .is-done > .share__done {
+        animation: none;
+    }
+}
+
+/* Windows high contrast: brand fills disappear, so keep edges visible. */
+@media (forced-colors: active) {
+    .share__item,
+    .share-sheet__mark,
+    .share-sheet__copy-button,
+    .share-sheet__native,
+    .share-sheet__close {
+        border: 1px solid ButtonText;
+        forced-color-adjust: auto;
+    }
 }

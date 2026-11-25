@@ -17,6 +17,9 @@ final class PreviewInspector
 {
     private const AGENT = 'Mozilla/5.0 (compatible; atannex-share-inspector/1.0)';
 
+    /** Larger pages and images are not read (a platform would give up on them too). */
+    private const MAX_BYTES = 20 * 1024 * 1024;
+
     public function __construct(private readonly Http $http) {}
 
     /**
@@ -32,7 +35,7 @@ final class PreviewInspector
         $report = ['url' => $url, 'status' => null, 'tags' => [], 'title' => null, 'description' => null, 'image' => null, 'card' => 'none', 'issues' => &$issues];
 
         try {
-            $response = $this->http->withHeaders(['User-Agent' => self::AGENT, 'Accept' => 'text/html'])->timeout(15)->get($url);
+            $response = $this->client()->withHeaders(['User-Agent' => self::AGENT, 'Accept' => 'text/html'])->get($url);
         } catch (Throwable $e) {
             $issues[] = ['level' => 'error', 'message' => 'The page could not be fetched: '.$e->getMessage()];
 
@@ -107,8 +110,15 @@ final class PreviewInspector
     {
         $image = ['url' => $url, 'status' => null, 'type' => null, 'width' => null, 'height' => null, 'bytes' => null];
 
+        // The address comes from the page: don't let it point the check at this machine's network.
+        if (! $this->public($url)) {
+            $issues[] = ['level' => 'error', 'message' => 'og:image points to a private or local address; platforms can\'t fetch it.'];
+
+            return $image;
+        }
+
         try {
-            $response = $this->http->withHeaders(['User-Agent' => self::AGENT])->timeout(15)->get($url);
+            $response = $this->client()->withHeaders(['User-Agent' => self::AGENT])->get($url);
         } catch (Throwable $e) {
             $issues[] = ['level' => 'error', 'message' => 'og:image could not be fetched: '.$e->getMessage()];
 
@@ -200,5 +210,38 @@ final class PreviewInspector
         $report['issues'] = $issues;
 
         return $report;
+    }
+
+    /**
+     * Few redirects, web schemes only, and no more than MAX_BYTES read.
+     */
+    private function client(): \Illuminate\Http\Client\PendingRequest
+    {
+        return $this->http->timeout(15)->withOptions([
+            'allow_redirects' => ['max' => 5, 'protocols' => ['http', 'https']],
+            'progress' => function ($total, $downloaded): void {
+                if ($total > self::MAX_BYTES || $downloaded > self::MAX_BYTES) {
+                    throw new \RuntimeException('the response is larger than '.(self::MAX_BYTES / 1024 / 1024).' MB.');
+                }
+            },
+        ]);
+    }
+
+    private function public(string $url): bool
+    {
+        $host = trim((string) parse_url($url, PHP_URL_HOST), '[]');
+        if ($host === '' || strtolower($host) === 'localhost') {
+            return false;
+        }
+
+        $ips = filter_var($host, FILTER_VALIDATE_IP) ? [$host] : (gethostbynamel($host) ?: []);
+
+        foreach ($ips as $ip) {
+            if (! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

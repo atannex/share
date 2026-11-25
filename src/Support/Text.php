@@ -31,6 +31,7 @@ final class Text
         // Cut at the last space unless that loses more than a third of the room.
         $cut = $space !== false && $space >= $room * 2 / 3 ? mb_substr($cut, 0, $space) : mb_substr($cut, 0, $room);
 
-        return rtrim($cut, " \t\n\r\0\x0B,;:.-–—").$end;
+        // rtrim() works on bytes and would split multibyte letters (р, ה, π) that share bytes with the dashes.
+        return (string) preg_replace('/[\s,;:.\-–—]+$/u', '', $cut).$end;
     }
 }

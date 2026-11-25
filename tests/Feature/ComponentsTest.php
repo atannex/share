@@ -35,6 +35,26 @@ final class ComponentsTest extends TestCase
     }
 
     #[Test]
+    public function a_component_narrowing_platforms_leaves_the_callers_share_alone(): void
+    {
+        $share = Share::url('https://example.test/a', 'A');
+        $html = Blade::render('<x-share::buttons :share="$share" only="x" /><x-share::buttons :share="$share" />', ['share' => $share]);
+
+        $this->assertStringContainsString('data-share-platform="facebook"', $html);
+        $this->assertContains('facebook', $share->platformKeys());
+    }
+
+    #[Test]
+    public function class_names_stay_clear_of_social_filter_lists(): void
+    {
+        $html = Blade::render('<x-share::buttons :for="$article" variant="pills" />', ['article' => $this->article()]);
+
+        // Filter lists such as Fanboy's Social hide these outright.
+        $this->assertStringNotContainsString('share__button', $html);
+        $this->assertStringNotContainsString('share__label', $html);
+    }
+
+    #[Test]
     public function sheet(): void
     {
         $html = Blade::render('<x-share::sheet :share="$share" id="story-share" />', [

@@ -4,6 +4,8 @@
     browser actions (copy, native) are counted by beacon. Behaviour:
     <x-share::scripts />. No title attributes: content blockers hide
     elements titled "Share on …"; aria-label names them instead.
+    Class names avoid the ones social filter lists hide (.share__button,
+    .share__label…), so keep that in mind when renaming them.
 --}}
 @php
     $classes = ['share', 'share--'.$variant, 'share--'.$size, 'share--vertical' => $vertical, 'share--labels' => $labels];
@@ -16,7 +18,7 @@
     @foreach ($links as $link)
         @continue(in_array($link->key(), ['qr', 'embed'], true))
         @php
-            $extra = ['class' => 'share__button share__button--'.$link->key()];
+            $extra = ['class' => 'share__item share__item--'.$link->key()];
             if ($link->key() === 'native') {
                 $extra['hidden'] = true;
             }
@@ -27,20 +29,20 @@
                 @if ($link->key() === 'copy')
                     <span class="share__done" aria-hidden="true">{!! \Atannex\Share\Support\Icons::render('check') !!}</span>
                 @endif
-                <span class="share__label">{{ $link->label }}</span>
+                <span class="share__name">{{ $link->label }}</span>
             </button>
         @else
             <a {!! \Atannex\Share\Links\Link::attributeString($link->attributes() + $extra) !!}>
                 {!! $link->icon !!}
-                <span class="share__label">{{ $link->label }}</span>
+                <span class="share__name">{{ $link->label }}</span>
             </a>
         @endif
     @endforeach
 
     @if ($sheet)
-        <button type="button" class="share__button share__button--more" data-share-open="{{ $sheet }}" aria-haspopup="dialog" aria-controls="{{ $sheet }}" aria-label="{{ __('share::share.more') }}">
+        <button type="button" class="share__item share__item--more" data-share-open="{{ $sheet }}" aria-haspopup="dialog" aria-controls="{{ $sheet }}" aria-label="{{ __('share::share.more') }}">
             {!! \Atannex\Share\Support\Icons::render('share') !!}
-            <span class="share__label">{{ __('share::share.more') }}</span>
+            <span class="share__name">{{ __('share::share.more') }}</span>
         </button>
     @endif
 

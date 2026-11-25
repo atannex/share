@@ -22,13 +22,14 @@ use Illuminate\Http\Request;
 final class Tracker
 {
     /** Link-preview fetchers, crawlers and scripts. */
-    private const BOTS = '/bot|crawl|spider|slurp|facebookexternalhit|facebot|embedly|preview|whatsapp\/|telegram|discord|slack|linkedin|skypeuri|bingpreview|headless|lighthouse|pingdom|monitor|curl|wget|python|go-http|java\/|okhttp|axios|node-fetch|httpclient|guzzle/i';
+    private const BOTS = '/bot|crawl|spider|slurp|facebookexternalhit|facebot|embedly|preview|whatsapp\/|telegrambot|discord|slack|linkedinbot|skypeuri|bingpreview|headless|lighthouse|pingdom|monitor|curl|wget|python|go-http|java\/|okhttp|axios|node-fetch|httpclient|guzzle/i';
 
     public function __construct(
         private readonly UrlGenerator $urls,
         private readonly bool $enabled,
         private readonly ?Cache $cache = null,
         private readonly int $dedupe = 30,
+        private readonly ?string $domain = null,
     ) {}
 
     public function enabled(): bool
@@ -41,7 +42,7 @@ final class Tracker
      */
     public function redirect(Platform $platform, ShareData $share, string $target): string
     {
-        return $this->urls->to($this->urls->signedRoute('share.redirect', array_filter([
+        return $this->absolute($this->urls->signedRoute('share.redirect', array_filter([
             'platform' => $platform->key,
             'to' => $target,
             'u' => $share->url,
@@ -54,10 +55,25 @@ final class Tracker
      */
     public function beacon(ShareData $share): string
     {
-        return $this->urls->to($this->urls->signedRoute('share.beacon', array_filter([
+        return $this->absolute($this->urls->signedRoute('share.beacon', array_filter([
             'u' => $share->url,
             'ref' => $share->subject?->reference(),
         ]), absolute: false));
+    }
+
+    /**
+     * A relative signed path made absolute, on the routes' own domain when one is set
+     * (a relative signed route loses it).
+     */
+    private function absolute(string $path): string
+    {
+        if ($this->domain === null || $this->domain === '') {
+            return $this->urls->to($path);
+        }
+
+        $scheme = parse_url($this->urls->to('/'), PHP_URL_SCHEME) ?: 'https';
+
+        return $scheme.'://'.$this->domain.$path;
     }
 
     /**
@@ -90,8 +106,19 @@ final class Tracker
             return true;
         }
 
-        $key = 'share:seen:'.sha1(implode('|', [$request->ip(), $request->userAgent(), $platform, $url, $subject?->reference()]));
+        return $this->cache->add($this->seenKey($request, $platform, $url, $subject), 1, $this->dedupe * 60);
+    }
 
-        return $this->cache->add($key, 1, $this->dedupe * 60);
+    /**
+     * Undo firstTime() for a share that failed to record, so a retry counts.
+     */
+    public function forget(Request $request, string $platform, ?string $url, ?Subject $subject): void
+    {
+        $this->cache?->forget($this->seenKey($request, $platform, $url, $subject));
+    }
+
+    private function seenKey(Request $request, string $platform, ?string $url, ?Subject $subject): string
+    {
+        return 'share:seen:'.sha1(implode('|', [$request->ip(), $request->userAgent(), $platform, $url, $subject?->reference()]));
     }
 }

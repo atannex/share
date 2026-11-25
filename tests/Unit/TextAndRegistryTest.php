@@ -67,4 +67,25 @@ final class TextAndRegistryTest extends TestCase
         $this->assertStringContainsString('<text', Icons::render('nope', 'N'));
         $this->assertSame('<i class="share-icon fab fa-x" aria-hidden="true"></i>', Icons::render('fab fa-x'));
     }
+
+    #[Test]
+    public function cutting_text_never_splits_a_multibyte_letter(): void
+    {
+        // р, ה and π share bytes with the dashes trimmed off the end.
+        foreach (['мир компьютер', 'שלום עולם הזה', 'αβγ π δεζ'] as $words) {
+            $cut = Text::limit(str_repeat('a', 195).' '.$words, 200);
+
+            $this->assertTrue(mb_check_encoding($cut, 'UTF-8'), bin2hex($cut));
+        }
+    }
+
+    #[Test]
+    public function platform_keys_are_case_insensitive(): void
+    {
+        $registry = new PlatformRegistry(PlatformRegistry::catalog());
+        $registry->define('MyIntranet', ['label' => 'Intranet', 'url' => 'https://intra.test', 'query' => ['u' => '{url}']]);
+
+        $this->assertTrue($registry->has('myintranet'));
+        $this->assertSame('myintranet', $registry->get('MyIntranet')->key);
+    }
 }
