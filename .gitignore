@@ -4,4 +4,3 @@
 .phpunit.result.cache
 
 # Documentation is kept locally, not on GitHub.
-/docs
