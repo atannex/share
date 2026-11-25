@@ -1,6 +1,6 @@
 # Atannex Share
 
-Share buttons, a share sheet and Open Graph tags for Laravel. Works with models, URLs, plain text and files, across 35+ platforms.
+Share buttons, a share sheet and Open Graph metadata for Laravel. Share models, URLs, text or files with more than 35 platforms.
 
 Requires PHP 8.2+ and Laravel 11, 12 or 13.
 
@@ -8,110 +8,143 @@ Requires PHP 8.2+ and Laravel 11, 12 or 13.
 
 ```bash
 composer require atannex/share
+
 php artisan migrate
 ```
 
-The migration creates the `share_counts` table. If you don't want share counting in the database, set `share.migrations` to `false` before migrating.
+This creates the `share_counts` table used for share tracking. If you don’t need database tracking, set `share.migrations` to `false` before running the migration.
 
-For QR codes in the share sheet:
+QR code support in the share sheet is optional. Install it with:
 
 ```bash
 composer require bacon/bacon-qr-code
 ```
 
-To publish the config file:
+Publish the configuration file if you want to customize the package:
 
 ```bash
 php artisan vendor:publish --tag=share-config
 ```
 
-Other publish tags: `share-views`, `share-lang`, `share-migrations`.
+You can also publish the views, translations or migrations with the `share-views`, `share-lang` and `share-migrations` tags.
 
 ## Quick start
 
-Add the tags and styles to your layout's `<head>`, then place the buttons and the script where you need them:
+Add the meta tags and styles to your layout’s `<head>`. Put the buttons and script wherever you want them to appear:
 
 ```blade
 <head>
+
     <x-share::meta :for="$post" />
+
     <x-share::styles />
+
 </head>
 
 <body>
+
     <x-share::buttons :for="$post" />
 
     <x-share::scripts />
+
 </body>
 ```
 
-That's enough for a working set of share buttons with click counting.
+This gives you share buttons with tracking enabled.
 
 ## What you can share
 
-`Share::for()` accepts almost anything. The `share()` helper does the same thing.
+Use `Share::for()` to build a share from a model, URL, text, array or closure. The `share()` helper is also available.
 
 ```php
 use Atannex\Share\Facades\Share;
 
 Share::for($post);                          // an Eloquent model
+
 Share::for('https://example.com/page');     // a URL
+
 Share::for('/about');                       // a relative path (made absolute)
+
 Share::for('Some text to share');           // text only
+
 Share::for(['url' => $url, 'title' => $t]); // an array
+
 Share::for(fn () => [...]);                 // a closure returning any of the above
+
 Share::for();                               // the current page
 
 Share::url('https://example.com', 'Title');
+
 Share::text('Text with no link');
 ```
 
-Platforms that need something the share doesn't have are skipped. For example, Pinterest is skipped when there is no image, and Facebook is skipped when there is no link.
+A platform is omitted when the share data it needs is missing. For example, Pinterest needs an image and Facebook needs a URL.
 
 ### Models
 
-Add the `HasShares` trait and describe the model's fields with `#[ShareAs]`:
+For Eloquent models, add the `HasShares` trait. Use `#[ShareAs]` to tell the package which fields to use:
 
 ```php
 use Atannex\Share\Attributes\ShareAs;
+
 use Atannex\Share\Concerns\HasShares;
 
 #[ShareAs(route: 'posts.show', routeKey: 'slug', text: 'excerpt', image: 'cover_url', hashtags: 'tags')]
+
 class Post extends Model
+
 {
+
     use HasShares;
+
 }
 ```
 
-Each value can be an attribute, a method or a dot path such as `author.name`. Use `url:` instead of `route:` if the model already has a URL field. Fields you leave out are picked up from common names (`title`, `name`, `description`, `summary`, `image`, `url`, ...).
+Each `ShareAs` value can point to an attribute, method or dot path (for example, `author.name`). If the model already has a URL field, use `url:` instead of `route:`. Any fields you omit are inferred from common names such as `title`, `name`, `description`, `summary`, `image` and `url.
 
-Without the attribute, those common names are still used, so many models work without any setup.
+You can also leave off the attribute entirely. The package will still look for those common fields, which is enough for many models.
 
-If you need full control, implement `Shareable`:
+For custom share data, implement the `Shareable` contract:
 
 ```php
 use Atannex\Share\Contracts\Shareable;
 
 class Fixture extends Model implements Shareable
+
 {
+
     public function toShare(): array
+
     {
+
         return [
+
             'url' => route('fixtures.show', $this),
+
             'title' => "{$this->home} {$this->score} {$this->away}",
+
             'message' => "Full time: {$this->home} {$this->score} {$this->away}",
+
             'image' => $this->card_image_url,
+
             'hashtags' => [$this->league->name],
+
         ];
+
     }
+
 }
 ```
 
-For classes you can't edit, register a resolver in a service provider:
+If the class belongs to another package or you’d rather not modify it, register a resolver in a service provider:
 
 ```php
 Share::resolveUsing(Invoice::class, fn (Invoice $invoice) => [
+
     'url' => route('invoices.public', $invoice),
+
     'title' => "Invoice {$invoice->number}",
+
 ]);
 ```
 
@@ -119,30 +152,47 @@ Share::resolveUsing(Invoice::class, fn (Invoice $invoice) => [
 
 ```php
 Share::for($post)
+
     ->title('The new bridge is open')
+
     ->message('The bridge is finally open!')     // the post text; defaults to the title
+
     ->text('A longer description for email and link cards')
+
     ->image($post->cover_url, alt: 'The bridge', width: 1200, height: 630)
+
     ->hashtags('Bamenda', $post->tags)
+
     ->via('yourhandle')                          // "via @yourhandle" on X
+
     ->only('facebook', 'x', 'whatsapp', 'copy');
 ```
 
-Other options:
+You can also use these methods:
 
 | Method                             | Use                                                                  |
+
 | ---------------------------------- | -------------------------------------------------------------------- |
+
 | `->except('reddit')`               | Remove platforms from the list                                       |
+
 | `->preset('compact')`              | Use a named set of platforms from the config                         |
+
 | `->video($url, player: $embedUrl)` | Add `og:video` and an X player card                                  |
+
 | `->file($url, 'video/mp4')`        | Let the device share the file itself (Instagram, TikTok, AirDrop...) |
+
 | `->embed('<iframe ...></iframe>')` | Code shown in the sheet's embed section                              |
+
 | `->meta([...])`                    | Extra Open Graph tags                                                |
+
 | `->about($model)`                  | Count shares against a model when the subject isn't one              |
+
 | `->withoutTracking()`              | Link straight to the platform, without counting                      |
+
 | `->withoutUtm()`                   | Don't add UTM parameters to the shared URL                           |
 
-HTML is stripped, relative URLs become absolute, and long text is cut at a word boundary to fit each platform's limit.
+HTML is removed, relative URLs are converted to absolute URLs, and text is trimmed at a word boundary to fit platform limits.
 
 ### Getting links
 
@@ -150,12 +200,15 @@ HTML is stripped, relative URLs become absolute, and long text is cut at a word 
 $share = Share::for($post);
 
 $share->links();           // a collection of Link objects
+
 $share->href('whatsapp');  // the button URL (goes through the counter)
+
 $share->to('whatsapp');    // the platform's own URL, not counted
+
 $share->qr(240);           // QR code as inline SVG
 ```
 
-Returning a share from a controller gives JSON, which is handy for SPAs:
+You can return the share directly from a controller. The response is JSON, which can be useful for an SPA:
 
 ```php
 return Share::for($post);
@@ -163,28 +216,35 @@ return Share::for($post);
 
 ## Blade components
 
-Every component takes `:for="$anything"` or `:share="Share::for(...)"`, as well as `only`, `except` and `preset`.
+All components accept either `:for="$anything"` or `:share="Share::for(...)"`. You can also pass `only`, `except` or `preset` to control which platforms are shown.
 
 ### Buttons
 
 ```blade
 <x-share::buttons :for="$post" />
+
 <x-share::buttons :for="$post" variant="brand" size="lg" />
+
 <x-share::buttons :for="$post" only="whatsapp,facebook,copy" />
 ```
 
-- `variant`: `icons`, `pills`, `brand` or `minimal`
-- `size`: `sm`, `md` or `lg`
-- `vertical`: stack the buttons in a column
-- `heading`, `labels`: show a heading and/or text labels
-- `sheet="id"`: add a "More" button that opens a share sheet
+\- `variant`: `icons`, `pills`, `brand` or `minimal`
+
+\- `size`: `sm`, `md` or `lg`
+
+\- `vertical`: stack the buttons in a column
+
+\- `heading`, `labels`: show a heading and/or text labels
+
+\- `sheet="id"`: add a "More" button that opens a share sheet
 
 ### Share sheet
 
-A dialog with every platform, a link preview, copy link, QR code, embed code and the device's native share. On phones it opens from the bottom of the screen.
+The share sheet includes the platform list, link preview, copy link, QR code, embed code and native sharing. On mobile, it opens as a bottom sheet.
 
 ```blade
 <x-share::buttons :for="$post" preset="compact" sheet="share-sheet" />
+
 <x-share::sheet :for="$post" id="share-sheet" />
 ```
 
@@ -200,26 +260,31 @@ Any element can open it:
 <x-share::meta :for="$post" />
 ```
 
-Outputs the Open Graph and X card tags, which control how the link looks when posted.
+This outputs Open Graph and X card metadata used to display link previews when someone shares the page.
 
 ### Scripts and styles
 
-`<x-share::scripts />` inlines the script once per page and picks up Vite's CSP nonce automatically. You can also pass `nonce="..."`.
+`<x-share::scripts />` includes the script inline once per page and automatically uses Vite’s CSP nonce. You can pass a `nonce` yourself if needed.
 
-`<x-share::styles />` is optional. Leave it out to write your own CSS, or keep it and override the variables:
+The styles component is optional. Use your own CSS if you prefer, or override these variables:
 
 ```css
 :root {
-    --share-size: 2.75rem;
-    --share-radius: 0.75rem;
+
+    \--share-size: 2.75rem;
+
+    \--share-radius: 0.75rem;
+
 }
 ```
 
-To send shares to your own analytics:
+You can listen for the share event and send it to your analytics service:
 
 ```js
 document.addEventListener('share:shared', (e) => {
+
     gtag('event', 'share', { method: e.detail.platform });
+
 });
 ```
 
@@ -230,55 +295,72 @@ php artisan share:platforms
 ```
 
 | Type           | Platforms                                                                                                                                                                              |
+
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+
 | Social         | facebook, x, threads, bluesky, mastodon, fediverse, linkedin, reddit, pinterest, tumblr, hackernews, flipboard, buffer, xing, vk, odnoklassniki, weibo, qzone, naver, hatena, snapchat |
+
 | Messaging      | whatsapp, telegram, line, messenger, viber, sms                                                                                                                                        |
+
 | Work and email | teams, classroom, trello, gmail, outlook, email                                                                                                                                        |
+
 | Browser        | copy, native, qr, embed, print                                                                                                                                                         |
 
-`twitter` works as an alias for `x`, and `mail` for `email`. Messenger, Viber and SMS are hidden on desktop by the default styles.
+The `twitter` alias maps to `x`, and `mail` maps to `email`. Messenger, Viber and SMS are hidden on desktop by default.
 
-The default list and presets live in `config/share.php`:
+Set the default platforms and presets in `config/share.php`:
 
 ```php
 'platforms' => ['facebook', 'x', 'whatsapp', 'linkedin', 'telegram', 'copy', 'native'],
 
 'presets' => [
+
     'compact' => ['facebook', 'x', 'whatsapp', 'copy'],
+
 ],
 ```
 
 ### Adding or changing a platform
 
-In the config:
+Add custom platforms or override built-in ones in the config:
 
 ```php
 'custom' => [
+
     'mastodon' => ['instance' => 'mas.to'],
 
     'intranet' => [
+
         'label' => 'Intranet',
+
         'url' => 'https://intra.example.com/share',
+
         'query' => ['u' => '{url}', 't' => '{title}'],
+
         'color' => '#0f172a',
+
     ],
+
 ],
 ```
 
-Or in code:
+You can also register a platform in code:
 
 ```php
 use Atannex\Share\ShareData;
 
 Share::extend('shortener', [
+
     'label' => 'Short link',
+
     'build' => fn (ShareData $share) => 'https://s.example.com/new?u='.urlencode($share->url),
+
 ]);
 ```
 
-Available placeholders: `{url}`, `{title}`, `{message}`, `{text}`, `{body}`, `{mail_body}`, `{image}`, `{via}`, `{hashtags}`, `{hashtag_line}`, `{first_hashtag}`, `{tags}`, `{site}`.
+Custom platform URLs can use these placeholders: `{url}`, `{title}`, `{message}`, `{text}`, `{body}`, `{mail_body}`, `{image}`, `{via}`, `{hashtags}`, `{hashtag_line}`, `{first_hashtag}`, `{tags}`, `{site}`.
 
-To see the URL each platform builds for a page:
+Use this command to inspect the URL generated for each platform:
 
 ```bash
 php artisan share:links https://example.com --title="Hello"
@@ -286,27 +368,33 @@ php artisan share:links https://example.com --title="Hello"
 
 ## Counting shares
 
-Counting is on by default. Button links go through a signed redirect at `/share/{platform}`, and actions like copy, native share and QR report to `/share/beacon`. Bots, link previews, prefetches and repeat clicks within 30 minutes are ignored.
+Share counting is enabled by default. Button clicks use a signed redirect at `/share/{platform}`. Actions such as copy, native share and QR code use `/share/beacon`. The package ignores bots, link previews, prefetches and repeat clicks within a 30-minute window.
 
 ```php
 $post->shareCount();                              // total
+
 $post->shareCount('whatsapp', now()->subWeek());  // one platform, last 7 days
+
 $post->shareBreakdown();                          // ['whatsapp' => 41, 'facebook' => 12, ...]
 
 Post::withShareCount()->orderByDesc('shares_count')->get();
 
 Share::count('https://example.com/page');
+
 Share::count(platform: ['x', 'bluesky'], since: now()->subDay());
+
 Share::breakdown($post);
 ```
 
-Each counted share fires `Atannex\Share\Events\Shared`:
+A successful share fires the `Atannex\Share\Events\Shared` event:
 
 ```php
 use Atannex\Share\Events\Shared;
 
 Event::listen(function (Shared $event) {
+
     // $event->model(), $event->platform, ...
+
 });
 ```
 
@@ -324,7 +412,7 @@ Set `SHARE_TRACKING=false` in `.env` to turn counting off.
 php artisan share:inspect https://example.com/blog/my-post
 ```
 
-Fetches the page as a platform crawler would and reports the title, description and image, plus problems such as missing tags, an image that's too small or too large, or a non-HTTPS image. It exits with code 1 when it finds errors, so you can run it in CI. Add `--json` for JSON output. Requires `guzzlehttp/guzzle`.
+The command fetches the page using a crawler-style request and checks its title, description and image metadata. It also reports issues such as missing tags, images that are too small or too large, and images served over non-HTTPS. It exits with code `1` if errors are found, making it suitable for CI. Pass `--json` for JSON output. This command requires `guzzlehttp/guzzle`.
 
 ## Testing
 
@@ -336,32 +424,49 @@ Share::fake();
 $this->get($post->share()->href('whatsapp'));
 
 Share::assertShared('whatsapp', $post);
+
 Share::assertShared('whatsapp', times: 1);
+
 Share::assertNotShared('x');
+
 Share::assertNothingShared();
 ```
 
 ## Configuration
 
-Options in `config/share.php`:
+The main options in `config/share.php` are:
 
 | Key                 | Purpose                                                             |
+
 | ------------------- | ------------------------------------------------------------------- |
+
 | `platforms`         | Default platforms and their order                                   |
+
 | `presets`           | Named sets of platforms                                             |
+
 | `custom`            | Your own platforms, or changes to built-in ones                     |
+
 | `via`               | Your X handle (`SHARE_VIA`)                                         |
+
 | `site_name`         | Site name for meta tags (`SHARE_SITE_NAME`, defaults to `APP_NAME`) |
+
 | `hashtags`          | Maximum number of hashtags per post                                 |
+
 | `text_limit`        | Maximum description length                                          |
+
 | `utm`               | UTM parameters added to shared URLs (`SHARE_UTM`)                   |
+
 | `tracking`          | Counting, the recorder and the repeat-click window                  |
+
 | `routes`            | Prefix, domain, middleware and throttle for the share routes        |
+
 | `migrations`        | Whether to run the package migration                                |
+
 | `file_share_max_mb` | Largest file the script will download for native file sharing       |
+
 | `popup`             | Desktop popup width and height                                      |
 
-Translations for English and French are included. Publish them with `--tag=share-lang` to change the wording or add a language.
+English and French translations are included. Publish them using `--tag=share-lang` to customize the text or add another language.
 
 ## License
 
